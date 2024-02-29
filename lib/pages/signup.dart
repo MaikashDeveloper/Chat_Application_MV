@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:random_string/random_string.dart';
 import 'package:vm_chat_app/pages/home_page.dart';
+import 'package:vm_chat_app/pages/sigin.dart';
 import 'package:vm_chat_app/service/dataabase.dart';
 import 'package:vm_chat_app/service/shared_pref.dart';
 
@@ -61,6 +62,7 @@ class _SignUpState extends State<SignUp> {
             content: Text("Registered Successfully"),
           ),
         );
+        // ignore: use_build_context_synchronously
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -311,11 +313,21 @@ class _SignUpState extends State<SignUp> {
                                         fontSize: 18.0,
                                       ),
                                     ),
-                                    Text(
-                                      "Sign Up Now!",
-                                      style: TextStyle(
-                                        color: Color.fromARGB(255, 98, 0, 255),
-                                        fontSize: 18.0,
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                                builder: ((context) {
+                                          return SignIn();
+                                        })));
+                                      },
+                                      child: Text(
+                                        "Sign Up Now!",
+                                        style: TextStyle(
+                                          color:
+                                              Color.fromARGB(255, 98, 0, 255),
+                                          fontSize: 18.0,
+                                        ),
                                       ),
                                     ),
                                   ],

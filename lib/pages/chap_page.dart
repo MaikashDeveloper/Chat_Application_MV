@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key});
+  String name, profileurl, username;
+  ChatPage(
+      {super.key,
+      required this.name,
+      required this.profileurl,
+      required this.username});
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -31,7 +36,7 @@ class _ChatPageState extends State<ChatPage> {
                     color: Color.fromARGB(255, 243, 144, 177),
                   ),
                   SizedBox(
-                    width: 120.0,
+                    width: 100.0,
                   ),
                   Text(
                     "Spider Man",
@@ -51,8 +56,8 @@ class _ChatPageState extends State<ChatPage> {
               padding: EdgeInsets.only(
                 left: 20.0,
                 right: 20.0,
-                top: 50.0,
-                bottom: 40.0,
+                top: 20.0,
+                bottom: 20.0,
               ),
               width: MediaQuery.of(context).size.width,
               height: MediaQuery.of(context).size.height / 1.15,

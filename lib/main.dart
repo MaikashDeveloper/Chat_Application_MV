@@ -46,7 +46,7 @@ class _MyHomePageState extends State<MyHomePage> {
     SignIn(),
     SignUp(),
     HomePage(),
-    ChatPage(),
+    // ChatPage(),
   ];
 
   @override

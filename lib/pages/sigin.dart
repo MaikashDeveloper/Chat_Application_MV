@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:vm_chat_app/pages/forgotpassword.dart';
 import 'package:vm_chat_app/pages/home_page.dart';
+import 'package:vm_chat_app/pages/signup.dart';
 import 'package:vm_chat_app/service/dataabase.dart';
 import 'package:vm_chat_app/service/shared_pref.dart';
 
@@ -37,8 +39,11 @@ class _SignInState extends State<SignIn> {
       await SharedPreferenceHelper().saveUserId(id);
       await SharedPreferenceHelper().saveUserPic(pic);
 
+      // ignore: use_build_context_synchronously
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => HomePage()));
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -199,12 +204,21 @@ class _SignInState extends State<SignIn> {
                                 ),
                                 Container(
                                   alignment: Alignment.bottomRight,
-                                  child: Text(
-                                    "Forgot Password ?",
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 18.0,
-                                      fontWeight: FontWeight.w500,
+                                  child: TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                              builder: ((context) {
+                                        return ForgoyPassword();
+                                      })));
+                                    },
+                                    child: Text(
+                                      "Forgot Password ?",
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 18.0,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -271,11 +285,19 @@ class _SignInState extends State<SignIn> {
                             fontSize: 18.0,
                           ),
                         ),
-                        Text(
-                          "Sign Up Now!",
-                          style: TextStyle(
-                            color: Color.fromARGB(255, 98, 0, 255),
-                            fontSize: 18.0,
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context)
+                                .push(MaterialPageRoute(builder: ((context) {
+                              return SignUp();
+                            })));
+                          },
+                          child: Text(
+                            "SignUp Now!",
+                            style: TextStyle(
+                              color: Color.fromARGB(255, 98, 0, 255),
+                              fontSize: 18.0,
+                            ),
                           ),
                         ),
                       ],

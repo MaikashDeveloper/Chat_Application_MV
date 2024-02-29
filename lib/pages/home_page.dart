@@ -1,8 +1,11 @@
+import 'dart:js';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+//import 'package:flutter/rendering.dart';
 import 'package:vm_chat_app/pages/chap_page.dart';
 import 'package:vm_chat_app/service/dataabase.dart';
+import 'package:vm_chat_app/service/shared_pref.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,7 +16,36 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   // varabiles there
+  getChatRoomIdByUserNmae(String a, String b) {
+    if (a.substring(0, 1).codeUnitAt(0) > b.substring(0, 1).codeUnitAt(0)) {
+      return "${b}_$a";
+    } else {
+      return "${a}_$b";
+    }
+  }
+
   bool search = false;
+  String? myName, myProfilePic, myUserName, myEmail;
+
+  getTheSharedpref() async {
+    myName = await SharedPreferenceHelper().getDisplayName();
+    myProfilePic = await SharedPreferenceHelper().getUsePic();
+    myUserName = await SharedPreferenceHelper().getUseName();
+    myEmail = await SharedPreferenceHelper().getUseEmail();
+    setState(() {});
+  }
+
+  onTheLoad() async {
+    await getTheSharedpref();
+    setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    onTheLoad();
+  }
+
   var queryResultSet = [];
   var temSearchStore = [];
 
@@ -38,7 +70,7 @@ class _HomePageState extends State<HomePage> {
     } else {
       temSearchStore = [];
       for (var element in queryResultSet) {
-        if (element['username'].startsWith(capitalizeValue)) {
+        if (element['Name'].startsWith(capitalizeValue)) {
           setState(() {
             temSearchStore.add(element);
           });
@@ -74,7 +106,12 @@ class _HomePageState extends State<HomePage> {
                               },
                               decoration: InputDecoration(
                                 border: InputBorder.none,
-                                hintText: 'Search user',
+                                hintText: '  Search user',
+                                hintStyle: TextStyle(
+                                  color: Color.fromARGB(251, 196, 153, 209),
+                                  fontSize: 20.0,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           )
@@ -101,8 +138,8 @@ class _HomePageState extends State<HomePage> {
                             search ? EdgeInsets.all(20) : EdgeInsets.all(6),
                         decoration: search
                             ? BoxDecoration(
-                                color: Color.fromARGB(255, 255, 0, 0),
-                                borderRadius: BorderRadius.circular(30),
+                                color: Color.fromARGB(255, 58, 33, 68),
+                                borderRadius: BorderRadius.circular(20),
                               )
                             : BoxDecoration(
                                 color: Color(0xFF3a2144),
@@ -111,7 +148,7 @@ class _HomePageState extends State<HomePage> {
                         child: search
                             ? Icon(
                                 Icons.close,
-                                color: Color.fromARGB(250, 255, 255, 255),
+                                color: Color.fromARGB(249, 156, 114, 214),
                                 size: 30,
                               )
                             : Icon(
@@ -155,14 +192,7 @@ class _HomePageState extends State<HomePage> {
                         : Column(
                             children: [
                               GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ChatPage(),
-                                    ),
-                                  );
-                                },
+                                onTap: () {},
                                 child: Row(
                                   //mainAxisAlignment: MainAxisAlignment.start,
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -281,44 +311,82 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget buildResultCard(data) {
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 8),
-      child: Material(
-        elevation: 5.0,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
+    return GestureDetector(
+      onTap: () async {
+        search = false;
+        setState(() {});
+        var chatRoomId = getChatRoomIdByUserNmae(myUserName!, data["username"]);
+        Map<String, dynamic> chatRoomInfoMap = {
+          "user": [
+            myUserName,
+            data["username"],
+          ]
+        };
+        await DatabaseMethods().creatChatRoom(chatRoomId, chatRoomInfoMap);
+        Navigator.push(
+          context as BuildContext,
+          MaterialPageRoute(
+            builder: ((context) {
+              return ChatPage(
+                  name: data["Name"],
+                  profileurl: data["Photo"],
+                  username: data["username"]);
+            } // ithu context end
+                ),
           ),
-          child: Row(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    data['username'],
-                    style: TextStyle(
-                      color: Colors.black45,
-                      fontSize: 15.0,
-                      fontWeight: FontWeight.w500,
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 8),
+        child: Material(
+          elevation: 5.0,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 255, 255, 255),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(60),
+                  child: Image.network(
+                    data["Photo"],
+                    height: 60,
+                    width: 60,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      data["Name"],
+                      style: TextStyle(
+                        color: Colors.black45,
+                        fontSize: 15.0,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  Text(
-                    data['username'],
-                    style: TextStyle(
-                      color: Colors.black45,
-                      fontSize: 15.0,
-                      fontWeight: FontWeight.w500,
+                    SizedBox(
+                      height: 10,
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    Text(
+                      data['username'],
+                      style: TextStyle(
+                        color: Colors.black45,
+                        fontSize: 15.0,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
