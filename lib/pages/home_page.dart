@@ -1,4 +1,4 @@
-import 'dart:js';
+// ignore_for_file: use_build_context_synchronously
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -100,17 +100,20 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     search
                         ? Expanded(
-                            child: TextField(
-                              onChanged: (value) {
-                                initiateSearch(value.toUpperCase());
-                              },
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                hintText: '  Search user',
-                                hintStyle: TextStyle(
-                                  color: Color.fromARGB(251, 196, 153, 209),
-                                  fontSize: 20.0,
-                                  fontWeight: FontWeight.bold,
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 30.0),
+                              child: TextField(
+                                onChanged: (value) {
+                                  initiateSearch(value.toUpperCase());
+                                },
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  hintText: '  Search user',
+                                  hintStyle: TextStyle(
+                                    color: Color.fromARGB(251, 196, 153, 209),
+                                    fontSize: 20.0,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),
@@ -314,7 +317,9 @@ class _HomePageState extends State<HomePage> {
     return GestureDetector(
       onTap: () async {
         search = false;
-        setState(() {});
+        setState(
+          () {},
+        );
         var chatRoomId = getChatRoomIdByUserNmae(myUserName!, data["username"]);
         Map<String, dynamic> chatRoomInfoMap = {
           "user": [
@@ -324,7 +329,7 @@ class _HomePageState extends State<HomePage> {
         };
         await DatabaseMethods().creatChatRoom(chatRoomId, chatRoomInfoMap);
         Navigator.push(
-          context as BuildContext,
+          context,
           MaterialPageRoute(
             builder: ((context) {
               return ChatPage(

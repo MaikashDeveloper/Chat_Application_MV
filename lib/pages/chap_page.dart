@@ -1,5 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:random_string/random_string.dart';
+import 'package:vm_chat_app/service/dataabase.dart';
+import 'package:vm_chat_app/service/shared_pref.dart';
 
+// ignore: must_be_immutable
 class ChatPage extends StatefulWidget {
   String name, profileurl, username;
   ChatPage(
@@ -13,6 +19,72 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
+  TextEditingController messageController = TextEditingController();
+  String? myUserName, myProfilePic, myName, myEmail, messageId, chatRoomId;
+
+  getTheSharedpref() async {
+    myUserName = await SharedPreferenceHelper().getUseName();
+    myProfilePic = await SharedPreferenceHelper().getUsePic();
+    myEmail = await SharedPreferenceHelper().getUseEmail();
+    myName = await SharedPreferenceHelper().getDisplayName();
+    chatRoomId = getChatRoomIdByUserNmae(widget.username, myUserName!);
+    setState(() {});
+  }
+
+  onTheLoad() async {
+    await getTheSharedpref();
+    setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    onTheLoad();
+  }
+
+  getChatRoomIdByUserNmae(String a, String b) {
+    if (a.substring(0, 1).codeUnitAt(0) > b.substring(0, 1).codeUnitAt(0)) {
+      return "${b}_$a";
+    } else {
+      return "${a}_$b";
+    }
+  }
+
+  addMessage(bool sendClick) {
+    if (messageController.text != "") {
+      String message = messageController.text;
+      messageController.text = "";
+
+      DateTime now = DateTime.now();
+      String fromattedDate = DateFormat('h:mma').format(now);
+
+      Map<String, dynamic> messageInfoMap = {
+        "message": message,
+        "sendBy": myUserName,
+        "ts": fromattedDate,
+        "time": FieldValue.serverTimestamp(),
+        "imgUrl": myProfilePic,
+      };
+      messageId ??= randomAlphaNumeric(10);
+
+      DatabaseMethods()
+          .addMessage(chatRoomId!, messageId!, messageInfoMap)
+          .then((value) {
+        Map<String, dynamic> lastMessageInfoMap = {
+          "lastMessage": message,
+          "lastMessageSendTime": fromattedDate,
+          "time": FieldValue.serverTimestamp(),
+          "lastMessageSendBy": myUserName,
+        };
+        DatabaseMethods()
+            .updateLastMessageSend(chatRoomId!, lastMessageInfoMap);
+        if (sendClick) {
+          messageId = null;
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,38 +192,47 @@ class _ChatPageState extends State<ChatPage> {
                     ),
                   ),
                   Spacer(),
-                  Material(
-                    borderRadius: BorderRadius.circular(20),
-                    elevation: 5.0,
-                    child: Container(
-                      padding: EdgeInsets.all(10.0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                hintText: "Type a message",
+                  SingleChildScrollView(
+                    child: Material(
+                      borderRadius: BorderRadius.circular(20),
+                      elevation: 5.0,
+                      child: Container(
+                        padding: EdgeInsets.all(10.0),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: messageController,
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  hintText: "Type a message",
+                                ),
                               ),
                             ),
-                          ),
-                          Container(
-                            padding: EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                                color: Colors.purple[400],
-                                borderRadius: BorderRadius.circular(10)),
-                            child: Center(
-                              child: Icon(
-                                Icons.send,
-                                color: const Color.fromARGB(255, 255, 255, 255),
+                            GestureDetector(
+                              onTap: () {
+                                addMessage(true);
+                              },
+                              child: Container(
+                                padding: EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                    color: Colors.purple[400],
+                                    borderRadius: BorderRadius.circular(10)),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.send,
+                                    color: const Color.fromARGB(
+                                        255, 255, 255, 255),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
