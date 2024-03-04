@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:random_string/random_string.dart';
+import 'package:vm_chat_app/pages/home_page.dart';
 import 'package:vm_chat_app/service/dataabase.dart';
 import 'package:vm_chat_app/service/shared_pref.dart';
 
@@ -21,6 +22,7 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   TextEditingController messageController = TextEditingController();
   String? myUserName, myProfilePic, myName, myEmail, messageId, chatRoomId;
+  Stream? messageStream;
 
   getTheSharedpref() async {
     myUserName = await SharedPreferenceHelper().getUseName();
@@ -33,6 +35,7 @@ class _ChatPageState extends State<ChatPage> {
 
   onTheLoad() async {
     await getTheSharedpref();
+    await getAndSetMessage();
     setState(() {});
   }
 
@@ -48,6 +51,62 @@ class _ChatPageState extends State<ChatPage> {
     } else {
       return "${a}_$b";
     }
+  }
+
+  Widget chatMessageTitle(String message, bool sendByMe) {
+    return Row(
+      mainAxisAlignment:
+          sendByMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+      children: [
+        Flexible(
+          child: Container(
+            padding: EdgeInsets.all(16),
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  bottomRight:
+                      sendByMe ? Radius.circular(0) : Radius.circular(24),
+                  topRight: Radius.circular(24),
+                  bottomLeft:
+                      sendByMe ? Radius.circular(24) : Radius.circular(0)),
+              color: sendByMe
+                  ? Color.fromARGB(255, 234, 236, 240)
+                  : Color.fromARGB(255, 211, 228, 243),
+            ),
+            child: Text(
+              message,
+              style: TextStyle(
+                color: Color.fromARGB(255, 0, 0, 0),
+                fontSize: 14.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget chatMessage() {
+    return StreamBuilder(
+      stream: messageStream,
+      builder: (context, AsyncSnapshot snapshot) {
+        return snapshot.hasData
+            ? ListView.builder(
+                padding: EdgeInsets.only(bottom: 90, top: 130),
+                itemCount: snapshot.data.docs.length,
+                reverse: true,
+                itemBuilder: (context, index) {
+                  DocumentSnapshot ds = snapshot.data.docs[index];
+                  return chatMessageTitle(
+                      ds["message"], myUserName == ds["sendBy"]);
+                })
+            : Center(
+                child: CircularProgressIndicator(),
+              );
+      },
+    );
   }
 
   addMessage(bool sendClick) {
@@ -85,6 +144,11 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  getAndSetMessage() async {
+    messageStream = await DatabaseMethods().getChatRoomMessage(chatRoomId);
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -95,23 +159,50 @@ class _ChatPageState extends State<ChatPage> {
           // left: 20.0,
           // right: 2.0,
         ),
-        child: Column(
+        child: Stack(
           children: [
+            Container(
+              margin: EdgeInsets.only(
+                top: 50,
+              ),
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height / 1.12,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
+                ),
+              ),
+              child: chatMessage(),
+            ),
             Padding(
               padding: const EdgeInsets.only(
                 left: 40.0,
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.arrow_back_ios,
-                    color: Color.fromARGB(255, 243, 144, 177),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) {
+                            return HomePage();
+                          },
+                        ),
+                      );
+                    },
+                    child: Icon(
+                      Icons.arrow_back_ios,
+                      color: Color.fromARGB(255, 243, 144, 177),
+                    ),
                   ),
                   SizedBox(
                     width: 100.0,
                   ),
                   Text(
-                    "Spider Man",
+                    widget.name,
                     style: TextStyle(
                       color: Color.fromARGB(255, 247, 114, 158),
                       fontSize: 22.0,
@@ -125,118 +216,38 @@ class _ChatPageState extends State<ChatPage> {
               height: 20.0,
             ),
             Container(
-              padding: EdgeInsets.only(
-                left: 20.0,
+              margin: EdgeInsets.only(
+                left: 20,
                 right: 20.0,
-                top: 20.0,
-                bottom: 20.0,
+                bottom: 10,
               ),
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.height / 1.15,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
+              alignment: Alignment.bottomCenter,
+              child: Material(
+                borderRadius: BorderRadius.circular(20),
+                elevation: 5.0,
+                child: Container(
+                  padding: EdgeInsets.all(10.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Container(
+                    child: TextField(
+                      controller: messageController,
+                      decoration: InputDecoration(
+                          border: InputBorder.none,
+                          hintText: "Type a message",
+                          suffixIcon: GestureDetector(
+                            onTap: () {
+                              addMessage(true);
+                            },
+                            child: Icon(
+                              Icons.send,
+                            ),
+                          )),
+                    ),
+                  ),
                 ),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(10),
-                    alignment: Alignment.topLeft,
-                    margin: EdgeInsets.only(
-                      left: MediaQuery.of(context).size.width / 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Color.fromARGB(255, 226, 224, 224),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(10),
-                        topRight: Radius.circular(10),
-                        bottomLeft: Radius.circular(10),
-                      ),
-                    ),
-                    child: Text(
-                      "Hello Spidey. I am Maikash",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 15.0,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 20.0,
-                  ),
-                  Container(
-                    padding: EdgeInsets.all(10),
-                    alignment: Alignment.topLeft,
-                    margin: EdgeInsets.only(
-                      right: MediaQuery.of(context).size.width / 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Color.fromARGB(255, 247, 226, 248),
-                      borderRadius: BorderRadius.only(
-                        bottomRight: Radius.circular(10),
-                        topRight: Radius.circular(10),
-                        topLeft: Radius.circular(10),
-                      ),
-                    ),
-                    child: Text(
-                      "Hello Maikash. What about you",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 15.0,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  Spacer(),
-                  SingleChildScrollView(
-                    child: Material(
-                      borderRadius: BorderRadius.circular(20),
-                      elevation: 5.0,
-                      child: Container(
-                        padding: EdgeInsets.all(10.0),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: messageController,
-                                decoration: InputDecoration(
-                                  border: InputBorder.none,
-                                  hintText: "Type a message",
-                                ),
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                addMessage(true);
-                              },
-                              child: Container(
-                                padding: EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                    color: Colors.purple[400],
-                                    borderRadius: BorderRadius.circular(10)),
-                                child: Center(
-                                  child: Icon(
-                                    Icons.send,
-                                    color: const Color.fromARGB(
-                                        255, 255, 255, 255),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ),
           ],

@@ -54,7 +54,7 @@ class _SignUpState extends State<SignUp> {
           "https://m.media-amazon.com/images/I/41jLBhDISxL.jpg",
         );
         await SharedPreferenceHelper().saveUserName(
-          mailcontroller.text.replaceAll("@gmail.com", " "),
+          mailcontroller.text.replaceAll("@gmail.com", " ").toUpperCase(),
         );
 
         ScaffoldMessenger.of(context).showSnackBar(

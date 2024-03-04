@@ -26,6 +26,7 @@ class _HomePageState extends State<HomePage> {
 
   bool search = false;
   String? myName, myProfilePic, myUserName, myEmail;
+  Stream? chatRoomsStreams;
 
   getTheSharedpref() async {
     myName = await SharedPreferenceHelper().getDisplayName();
@@ -37,7 +38,32 @@ class _HomePageState extends State<HomePage> {
 
   onTheLoad() async {
     await getTheSharedpref();
+    chatRoomsStreams = await DatabaseMethods().getChatRooms();
     setState(() {});
+  }
+
+  Widget ChatRoomList() {
+    return StreamBuilder(
+        stream: chatRoomsStreams,
+        builder: (context, AsyncSnapshot snapshot) {
+          return snapshot.hasData
+              ? ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: snapshot.data.docs.length,
+                  shrinkWrap: true,
+                  itemBuilder: (context, index) {
+                    DocumentSnapshot ds = snapshot.data.doc.length;
+                    return ChatRoomListTitle(
+                        lastMessage: ds['lastMessage'],
+                        chatRoomId: ds.id,
+                        myUsername: myUserName!,
+                        time: ds["lastMessageSendTime"]);
+                  },
+                )
+              : Center(
+                  child: CircularProgressIndicator(),
+                );
+        });
   }
 
   @override
@@ -192,117 +218,7 @@ class _HomePageState extends State<HomePage> {
                             children: temSearchStore.map((element) {
                               return buildResultCard(element);
                             }).toList())
-                        : Column(
-                            children: [
-                              GestureDetector(
-                                onTap: () {},
-                                child: Row(
-                                  //mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(60),
-                                      child: Image.asset(
-                                        "images/Spider_man.jpg",
-                                        height: 70,
-                                        width: 70,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 20.0,
-                                    ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        SizedBox(
-                                          height: 10.0,
-                                        ),
-                                        Text(
-                                          'Spider Man',
-                                          style: TextStyle(
-                                            color: Colors.black,
-                                            fontSize: 18.0,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Hi..',
-                                          style: TextStyle(
-                                            color: Colors.black45,
-                                            fontSize: 15.0,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Spacer(),
-                                    Text(
-                                      "04:30 PM",
-                                      style: TextStyle(
-                                        color: Colors.black45,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // User One Ended Heare
-                              SizedBox(
-                                height: 20,
-                              ),
-                              Row(
-                                //mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(60),
-                                    child: Image.asset(
-                                      "images/vai.jpeg",
-                                      height: 70,
-                                      width: 70,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 20.0,
-                                  ),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      SizedBox(
-                                        height: 10.0,
-                                      ),
-                                      Text(
-                                        'Vaishnavi',
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 18.0,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Oiii..',
-                                        style: TextStyle(
-                                          color: Colors.black45,
-                                          fontSize: 15.0,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Spacer(),
-                                  Text(
-                                    "03:00 PM",
-                                    style: TextStyle(
-                                      color: Colors.black45,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                        : ChatRoomList(),
                   ],
                 ),
               ),
@@ -333,9 +249,10 @@ class _HomePageState extends State<HomePage> {
           MaterialPageRoute(
             builder: ((context) {
               return ChatPage(
-                  name: data["Name"],
-                  profileurl: data["Photo"],
-                  username: data["username"]);
+                name: data["Name"],
+                profileurl: data["Photo"],
+                username: data["username"],
+              );
             } // ithu context end
                 ),
           ),
@@ -394,6 +311,91 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class ChatRoomListTitle extends StatefulWidget {
+  final String lastMessage, chatRoomId, myUsername, time;
+  const ChatRoomListTitle(
+      {super.key,
+      required this.lastMessage,
+      required this.chatRoomId,
+      required this.myUsername,
+      required this.time});
+
+  @override
+  State<ChatRoomListTitle> createState() => _ChatRoomListTitleState();
+}
+
+class _ChatRoomListTitleState extends State<ChatRoomListTitle> {
+  String profilePicUrl = "", name = "", username = "", id = "";
+  getThisUseerInfo() async {
+    username =
+        widget.chatRoomId.replaceAll("_", "").replaceAll(widget.myUsername, "");
+    QuerySnapshot querySnapshot =
+        await DatabaseMethods().getUserInfo(username.toUpperCase());
+    name = "${querySnapshot.docs[0]["Name"]}";
+    profilePicUrl = "${querySnapshot.docs[0]['Photo']}";
+    id = "${querySnapshot.docs[0]["id"]}";
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      child: Row(
+        //mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          profilePicUrl == ""
+              ? CircularProgressIndicator()
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(60),
+                  child: Image.network(
+                    profilePicUrl,
+                    height: 70,
+                    width: 70,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+          SizedBox(
+            width: 20.0,
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 10.0,
+              ),
+              Text(
+                username,
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 18.0,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                widget.lastMessage,
+                style: TextStyle(
+                  color: Colors.black45,
+                  fontSize: 15.0,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          Spacer(),
+          Text(
+            widget.time,
+            style: TextStyle(
+              color: Colors.black45,
+            ),
+          ),
+        ],
       ),
     );
   }
